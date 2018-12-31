@@ -144,14 +144,15 @@ class ClusterJob:
         command = 'date --iso-8601=seconds'
         stdin, stdout, stderr = self.cluster_account.exec_command(command)
         out = stdout.readlines()
-        now = out[0].strip()
+        # Ensure timezone and carriage return are stripped off
+        now = out[0][:19]
         before_f = datetime.fromisoformat(before).timestamp()
         after_f = datetime.fromisoformat(after).timestamp()
         now_f = datetime.fromisoformat(now).timestamp()
         denom = after_f - before_f
         if denom < 0.01:
             return 0.0
-        return (now_f - before_f) / denom 
+        return (now_f - before_f) / denom
 
     def output(self):
         stat = self.status()
