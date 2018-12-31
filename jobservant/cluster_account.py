@@ -1,38 +1,33 @@
 import paramiko
 import getpass
 from .cluster_job import ClusterJob
+from .has_a_logger import HasALogger
 
 
-class ClusterAccount:
+class ClusterAccount(HasALogger):
     def __init__(self, server, **kwargs):
         self.server = server
         self.ssh = None
 
-        if kwargs.get('username') is not None:
-            self.username = kwargs['username']
-        else:
-            self.username = getpass.getuser()
+        self.username = kwargs.get('username', getpass.getuser())
+        self.workspace = kwargs.get('workspace',
+                                    '/scratch/' + self.username)
 
-        if kwargs.get('workspace') is not None:
-            self.workspace = kwargs['workspace']
-        else:
-            self.workspace = '/scratch/' + self.username
+        self.init_logging(**kwargs)
 
-        self.debug = False
-        if kwargs.get('debug') is not None:
-            self.debug = kwargs['debug']
         self.workspace_verified = False
 
     def connect(self):
         if (self.ssh is None):
+            self.log('info', 'Connecting to %s@%s' %
+                     (self.username, self.server))
             self.ssh = paramiko.SSHClient()
             self.ssh.load_system_host_keys()
             self.ssh.connect(self.server, username=self.username)
 
     def exec_command(self, command):
         self.connect()
-        if self.debug:
-            print(command)
+        self.log('debug', command)
         return self.ssh.exec_command(command)
 
     # TODO: YUCK?

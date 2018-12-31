@@ -3,9 +3,9 @@ import string
 import random
 import base64
 import re
+from .has_a_logger import HasALogger
 
-
-class ClusterJob:
+class ClusterJob(HasALogger):
     DIRECTORY_RETRIES = 10
     DIRECTORY_RANDOM_CHARACTERS = 20
     DEFAULT_SUBMIT_SCRIPT_NAME = 'job_submit.sh'
@@ -20,6 +20,8 @@ class ClusterJob:
         self.work_directory = None
         self.submit_script_path = None
         self.jobid = None
+        self.init_logging(log_level=kwargs.get('log_level',
+                                               self.cluster_account.log_level))
 
     def get_script_text(self, **kwargs):
         if kwargs.get('text') is not None:
@@ -33,6 +35,8 @@ class ClusterJob:
         raise ValueError('No script text provided')
 
     def make_new_work_directory(self):
+        self.log('info', 'Constructing work directory ...')
+
         self.cluster_account.ensure_workspace_exists()
         tries = self.DIRECTORY_RETRIES
         while (tries > 0):
@@ -46,6 +50,7 @@ class ClusterJob:
                     raise ValueError("Couldn't create work directory " +
                                      directory)
                 self.work_directory = directory
+                self.log('info', 'Work directory %s created' % (directory))
                 return True
 
         raise ValueError("Couldn't create work directory")
@@ -69,6 +74,8 @@ class ClusterJob:
         if not self.work_directory:
             self.make_new_work_directory()
 
+        self.log('info', 'Constructing job script ...')
+
         script_path = self.work_directory + '/' + self.submit_script_name
 
         command = 'echo ' + self.b64script() + ' | base64 --decode > ' + \
@@ -84,15 +91,18 @@ class ClusterJob:
 
         if not self.submit_script_path:
             self.construct_submit_script()
+
+        self.log('info', 'Submitting job ...')
         command = 'cd ' + self.work_directory + ' && sbatch ' + \
             self.submit_script_path
         stdin, stdout, stderr = self.cluster_account.exec_command(command)
         out = stdout.read().decode('ascii')
-        print(out)
         m = re.match(self.SUBMIT_JOBID_REGEX, out)
         if m is None:
             raise ValueError('Job did not submit right')
         self.jobid = m.groups()[0]
+
+        self.log('info', out)
 
         return True
 
@@ -117,8 +127,7 @@ class ClusterJob:
             return stat
 
         out = stdout.readlines()
-        print(out)
-        print(len(out))
+        self.log('debug', 'qstat output:\n' + ''.join(out))
         if len(out) < 2:
             # Probably job finished
             stat['status'] = 'finished'
