@@ -5,10 +5,11 @@ from IPython.display import display
 
 class JobProgress:
 
-    def __init__(self, cluster_job):
+    def __init__(self, cluster_job, **kwargs):
         self.cluster_job = cluster_job
+        self.suppress_output = kwargs.get('suppress_output', False)
 
-        # Wudgets
+        # Widgets
         self.waiting_progress = None
         self.running_progress = None
         self.status_field = None
@@ -27,7 +28,8 @@ class JobProgress:
         self.create_status_field()
         self.create_waiting_progress()
         self.create_running_progress()
-        self.create_output_field()
+        if not self.suppress_output:
+            self.create_output_field()
 
         self.initialized = True
 
@@ -85,8 +87,9 @@ class JobProgress:
             self.finished = True
             self.waiting_done()
             self.running_done()
-            html = '<br /><pre>' + self.cluster_job.output() + '</pre>'
-            self.output_field.value = html
+            if not self.suppress_output:
+                html = '<br /><pre>' + self.cluster_job.output() + '</pre>'
+                self.output_field.value = html
         elif status['status'] == 'running':
             self.finished = False
             self.waiting_done()

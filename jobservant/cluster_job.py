@@ -35,9 +35,10 @@ class ClusterJob(HasALogger):
         raise ValueError('No script text provided')
 
     def make_new_work_directory(self):
+        self.cluster_account.ensure_workspace_exists()
+
         self.log('info', 'Constructing work directory ...')
 
-        self.cluster_account.ensure_workspace_exists()
         tries = self.DIRECTORY_RETRIES
         while (tries > 0):
             tries -= 1
@@ -55,7 +56,7 @@ class ClusterJob(HasALogger):
 
         raise ValueError("Couldn't create work directory")
 
-    def b64script(self):
+    def construct_submit_file_contents(self):
         if not self.accounting_group:
             self.get_default_accounting_group()
 
@@ -64,26 +65,32 @@ class ClusterJob(HasALogger):
         if self.time is not None:
             script += "#SBATCH --time=" + self.time + "\n"
         script += self.text
-        return base64.b64encode(bytes(script, 'ascii')).decode('ascii')
+        return script
+
+    def b64file(self, contents):
+        return base64.b64encode(bytes(contents, 'ascii')).decode('ascii')
 
     def get_default_accounting_group():
         # E.g., sacctmgr list account where user=cwant withassoc -p
         raise ValueError('TODO: Not Implemented')
 
     def construct_submit_script(self):
+        contents = self.construct_submit_file_contents()
+        self.submit_script_path = self.create_remote_file(self.submit_script_name,
+                                                          contents)
+        return True
+
+    def create_remote_file(self, filename, contents):
         if not self.work_directory:
             self.make_new_work_directory()
-
-        self.log('info', 'Constructing job script ...')
-
-        script_path = self.work_directory + '/' + self.submit_script_name
-
-        command = 'echo ' + self.b64script() + ' | base64 --decode > ' + \
-            script_path
+        self.log('info', 'Creating remote file %s ...' % filename)
+        file_path = self.work_directory + '/' + filename
+        command = 'echo %s | base64 --decode > %s' % (self.b64file(contents),
+                                                      file_path)
         if not self.cluster_account.simple_exec(command):
-            raise ValueError('Could not create job script')
-        self.submit_script_path = script_path
-        return True
+            raise ValueError('Could not create file')
+        self.log('info', 'File %s created' % file_path)
+        return file_path
 
     def submit(self):
         if self.status()['status'] != 'not_submitted':
