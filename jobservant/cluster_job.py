@@ -5,17 +5,22 @@ import base64
 import re
 from .has_a_logger import HasALogger
 
+
 class ClusterJob(HasALogger):
     DIRECTORY_RETRIES = 10
     DIRECTORY_RANDOM_CHARACTERS = 20
     DEFAULT_SUBMIT_SCRIPT_NAME = 'job_submit.sh'
     SUBMIT_JOBID_REGEX = r"Submitted batch job (\d+)"
+    ALLOWED_JOB_PARAMS = ['account', 'time', 'mem', 'pmem']
 
     def __init__(self, **kwargs):
         self.cluster_account = kwargs['cluster_account']
         self.text = self.get_script_text(**kwargs)
-        self.accounting_group = kwargs.get('accounting_group')
-        self.time = kwargs.get('time') or None
+
+        self.job_params = {}
+        for key in self.ALLOWED_JOB_PARAMS:
+            self.job_params[key] = kwargs.get(key)
+
         self.submit_script_name = self.DEFAULT_SUBMIT_SCRIPT_NAME
         self.work_directory = None
         self.submit_script_path = None
@@ -57,13 +62,16 @@ class ClusterJob(HasALogger):
         raise ValueError("Couldn't create work directory")
 
     def construct_submit_file_contents(self):
-        if not self.accounting_group:
+        if not self.job_params.get('account'):
             self.get_default_accounting_group()
 
         script = "#!/bin/sh\n"
-        script += "#SBATCH --account=" + self.accounting_group + "\n"
-        if self.time is not None:
-            script += "#SBATCH --time=" + self.time + "\n"
+
+        for key in self.job_params:
+            value = self.job_params.get(key)
+            if value is not None:
+                script += "#SBATCH --%s=%s\n" % (key, value)
+
         script += self.text
         return script
 
@@ -76,8 +84,8 @@ class ClusterJob(HasALogger):
 
     def construct_submit_script(self):
         contents = self.construct_submit_file_contents()
-        self.submit_script_path = self.create_remote_file(self.submit_script_name,
-                                                          contents)
+        self.submit_script_path = \
+            self.create_remote_file(self.submit_script_name, contents)
         return True
 
     def create_remote_file(self, filename, contents):

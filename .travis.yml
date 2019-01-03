@@ -1,0 +1,11 @@
+os: linux
+sudo: false
+language: python
+
+matrix:
+  include:
+    - python: 3.7
+install:
+  - pip install flake8
+script:
+  - flake8 --verbose
