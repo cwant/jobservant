@@ -1,5 +1,7 @@
 # jobservant
 
+[![Build Status](https://travis-ci.org/cwant/jobservant.svg?branch=master)](https://travis-ci.org/cwant/jobservant)
+
 This package submits and monitors the progress of jobs on HPC clusters.
 
 Expanded documentation coming soon, but currently there are three main classes: `jobservant.cluster_account.ClusterAccount`, `jobservant.cluster_job.ClusterJob`, and `jobservant.jupyter.job_progress.JobProgress`.
