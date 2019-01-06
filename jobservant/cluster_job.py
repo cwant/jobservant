@@ -133,34 +133,48 @@ class ClusterJob(HasALogger):
         stat = {'jobid': self.jobid}
         stat['status'] = 'submitted'
 
-        # Fiwlds: jobid, status, submit time, start time, end time
-        command = 'squeue -j ' + self.jobid + ' -o "%i,%t,%V,%S,%e"'
-        stdin, stdout, stderr = self.cluster_account.exec_command(command)
-        if stdout.channel.recv_exit_status() > 0:
-            # Probably job finished
+        queue_status = self.queue_status_hash()
+        if queue_status == {}:
             stat['status'] = 'finished'
             return stat
 
-        out = stdout.readlines()
-        self.log('debug', 'qstat output:\n' + ''.join(out))
-        if len(out) < 2:
-            # Probably job finished
-            stat['status'] = 'finished'
-            return stat
-        fields = out[1].strip().split(',')
-        job_status = fields[1]
+        job_status = queue_status['ST']
         if job_status == 'PD':
             stat['status'] = 'waiting'
-            stat['done'] = self.done_factor(fields[3], fields[2])
+            stat['done'] = self.done_factor(queue_status['START_TIME'],
+                                            queue_status['SUBMIT_TIME'])
         elif job_status == 'R':
             stat['status'] = 'running'
-            stat['done'] = self.done_factor(fields[4], fields[3])
+            stat['done'] = self.done_factor(queue_status['END_TIME'],
+                                            queue_status['START_TIME'])
         elif job_status == 'CG':
             stat['status'] = 'running'
             stat['done'] = 1.0
         else:
             raise ValueError('Unknown job status ' + job_status)
         return stat
+
+    def queue_status_hash(self):
+        command = 'squeue -j ' + self.jobid + ' -o "%all"'
+        stdin, stdout, stderr = self.cluster_account.exec_command(command)
+        if stdout.channel.recv_exit_status() > 0:
+            # Probably job finished
+            return {}
+
+        out = stdout.readlines()
+        self.log('debug', 'squeue output:\n' + ''.join(out))
+        if len(out) < 2:
+            # Probably job finished
+            return {}
+
+        header = out[0].strip().split('|')
+        fields = out[1].strip().split('|')
+        out = {}
+        for i in range(len(header)):
+            if len(header[i]) > 0:
+                out[header[i]] = fields[i]
+
+        return out
 
     def done_factor(self, after, before):
         if 'N/A' in (before, after):
