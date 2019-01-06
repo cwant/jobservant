@@ -1,7 +1,7 @@
 from .job_progress import JobProgress
 
 
-class JobDisplay:
+class JobPresenter:
 
     def __init__(self, cluster_job, **kwargs):
         self.cluster_job = cluster_job
