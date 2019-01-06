@@ -56,8 +56,11 @@ class ClusterAccount(HasALogger):
         command = 'mkdir -p ' + directory
         return self.simple_exec(command)
 
-    def submit_job(self, **kwargs):
+    def create_job(self, **kwargs):
         self.ensure_workspace_exists()
-        job = ClusterJob(cluster_account=self, **kwargs)
+        return ClusterJob(cluster_account=self, **kwargs)
+
+    def submit_job(self, **kwargs):
+        job = self.create_job(**kwargs)
         job.submit()
         return job
