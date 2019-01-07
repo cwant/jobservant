@@ -22,6 +22,7 @@ class JobStatusTable:
         queue_status = self.cluster_job.queue_status_hash()
         if queue_status == {}:
             self.add_row('State', 'Finished')
+            self.add_finished_state_rows()
         else:
             self.add_row('State', queue_status['STATE'])
 
@@ -38,6 +39,21 @@ class JobStatusTable:
             self.add_row('Node list', queue_status['NODELIST'])
 
         self.finish_table()
+
+    def add_finished_state_rows(self):
+        efficiency = self.cluster_job.efficiency_hash()
+        if efficiency == {} or not efficiency.get('exit_code'):
+            return
+        self.add_row('Exit Code', efficiency['exit_code'])
+        # TODO: make the following more fault tolerant
+
+        self.add_row('Wall-time used', efficiency['walltime'])
+
+        self.add_separator()
+        self.add_row('CPU Utilized', efficiency['cpu_utilized'])
+        self.add_row('CPU Efficiency', efficiency['cpu_efficiency'])
+        self.add_row('Memory Utilized', efficiency['memory_utilized'])
+        self.add_row('Memory Efficiency', efficiency['memory_efficiency'])
 
     def start_table(self):
         self.setup_table_style()

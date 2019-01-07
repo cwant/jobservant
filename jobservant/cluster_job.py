@@ -12,6 +12,15 @@ class ClusterJob(HasALogger):
     DEFAULT_SUBMIT_SCRIPT_NAME = 'job_submit.sh'
     SUBMIT_JOBID_REGEX = r"Submitted batch job (\d+)"
     ALLOWED_JOB_PARAMS = ['account', 'time', 'mem', 'pmem']
+    SEFF_FIELD_MAP = {
+        'State': 'state',
+        'CPU Utilized': 'cpu_utilized',
+        'CPU Efficiency': 'cpu_efficiency',
+        'Memory Utilized': 'memory_utilized',
+        'Memory Efficiency': 'memory_efficiency',
+        'Job Wall-clock time': 'walltime'
+    }
+    SEFF_EXIT_CODE_REGEX = r"COMPLETED \(exit code (\d+)\)"
 
     def __init__(self, **kwargs):
         self.cluster_account = kwargs['cluster_account']
@@ -169,12 +178,47 @@ class ClusterJob(HasALogger):
 
         header = out[0].strip().split('|')
         fields = out[1].strip().split('|')
-        out = {}
+        output_hash = {}
         for i in range(len(header)):
             if len(header[i]) > 0:
-                out[header[i]] = fields[i]
+                output_hash[header[i]] = fields[i]
 
-        return out
+        return output_hash
+
+    def efficiency_hash(self):
+        # TODO: consider using sacct output to create more flexible output
+        command = 'seff -j ' + self.jobid
+        stdin, stdout, stderr = self.cluster_account.exec_command(command)
+        if stdout.channel.recv_exit_status() > 0:
+            # Probably job finished
+            return {}
+
+        out = stdout.readlines()
+        self.log('debug', 'seff output:\n' + ''.join(out))
+        if len(out) < 2:
+            # Probably job finished
+            return {}
+
+        self.log('debug', out)
+
+        output_hash = {}
+        for row in out:
+            (heading, data) = row.strip().split(': ', 1)
+            if heading in self.SEFF_FIELD_MAP:
+                new_heading = self.SEFF_FIELD_MAP[heading]
+                output_hash[new_heading] = data
+
+                if new_heading == 'state':
+                    m = re.match(self.SEFF_EXIT_CODE_REGEX, data)
+                    if m is not None:
+                        output_hash['exit_code'] = m.groups()[0]
+
+                if new_heading == 'state':
+                    m = re.match(self.SEFF_EXIT_CODE_REGEX, data)
+                    if m is not None:
+                        output_hash['exit_code'] = m.groups()[0]
+
+        return output_hash
 
     def done_factor(self, after, before):
         if 'N/A' in (before, after):
