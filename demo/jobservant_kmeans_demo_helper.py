@@ -13,18 +13,24 @@ def get_points_and_labels():
     return blobs, cluster_labels
 
 
-def plot_clusters(title, xy_points, labels):
+def plot_clusters(title, xy_points, labels=None):
     plt.figure()
     plt.title(title)
     xy_points_df = pandas.DataFrame(xy_points, columns=['x', 'y'])
-    xy_points_df['labels'] = pandas.Series(labels)
 
-    colours = ["red", "blue", "green"]
-    clusters = [0, 1, 2]
-    for cluster_id in clusters:
-        cluster_data = xy_points_df.loc[xy_points_df["labels"] == cluster_id,
-                                        ["x", "y"]]
-        plt.scatter(cluster_data.x, cluster_data.y, c=colours[cluster_id-1])
+    if labels is None:
+        plt.scatter(xy_points_df.x, xy_points_df.y, c="grey")
+    else:
+        xy_points_df['labels'] = pandas.Series(labels)
+        colours = ["red", "blue", "green"]
+        clusters = [0, 1, 2]
+        for cluster_id in clusters:
+            cluster_data = \
+                xy_points_df.loc[xy_points_df["labels"] == cluster_id,
+                                 ["x", "y"]]
+            plt.scatter(cluster_data.x, cluster_data.y,
+                        c=colours[cluster_id-1])
+
     plt.show()
 
 

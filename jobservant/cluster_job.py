@@ -236,7 +236,7 @@ class ClusterJob(HasALogger):
             return 0.0
         return (now_f - before_f) / denom
 
-    def output(self):
+    def fetch_output(self):
         stat = self.status()
         if stat['status'] != 'finished':
             raise ValueError('Job is in state ' + stat['status'])
