@@ -37,17 +37,6 @@ class ClusterJob(HasALogger):
         self.init_logging(log_level=kwargs.get('log_level',
                                                self.cluster_account.log_level))
 
-    def get_script_text(self, **kwargs):
-        if kwargs.get('text') is not None:
-            return kwargs.get('text')
-
-        if kwargs.get('script') is not None:
-            f = open(kwargs['script'], "r")
-            text = f.read()
-            f.close
-            return text
-        raise ValueError('No script text provided')
-
     def make_new_work_directory(self):
         self.cluster_account.ensure_workspace_exists()
 
@@ -70,6 +59,18 @@ class ClusterJob(HasALogger):
 
         raise ValueError("Couldn't create work directory")
 
+    def get_script_text(self, **kwargs):
+        # Return string with submit script text
+        if kwargs.get('text') is not None:
+            return kwargs.get('text')
+
+        if kwargs.get('script') is not None:
+            f = open(kwargs['script'], "r")
+            text = f.read()
+            f.close
+            return text
+        raise ValueError('No script text provided')
+
     def construct_submit_file_contents(self):
         if not self.job_params.get('account'):
             self.get_default_accounting_group()
@@ -91,12 +92,6 @@ class ClusterJob(HasALogger):
         # E.g., sacctmgr list account where user=cwant withassoc -p
         raise ValueError('TODO: Not Implemented')
 
-    def construct_submit_script(self):
-        contents = self.construct_submit_file_contents()
-        self.submit_script_path = \
-            self.create_remote_file(self.submit_script_name, contents)
-        return True
-
     def create_remote_file(self, filename, contents):
         if not self.work_directory:
             self.make_new_work_directory()
@@ -108,6 +103,12 @@ class ClusterJob(HasALogger):
             raise ValueError('Could not create file')
         self.log('info', 'File %s created' % file_path)
         return file_path
+
+    def construct_submit_script(self):
+        contents = self.construct_submit_file_contents()
+        self.submit_script_path = \
+            self.create_remote_file(self.submit_script_name, contents)
+        return True
 
     def submit(self):
         if self.status()['status'] != 'not_submitted':
@@ -129,12 +130,6 @@ class ClusterJob(HasALogger):
         self.log('info', out)
 
         return True
-
-    def clean_work_directory(self):
-        if not self.work_directory:
-            raise ValueError('No work directory to clean')
-        command = 'rm -rf ' + self.work_directory
-        return self.cluster_account.simple_exec(command)
 
     def status(self):
         if self.jobid is None:
@@ -236,12 +231,39 @@ class ClusterJob(HasALogger):
             return 0.0
         return (now_f - before_f) / denom
 
+    def fetch_file(self, filename):
+        path = '{}/{}'.format(self.work_directory, filename)
+        command = 'cat ' + path
+        stdin, stdout, stderr = self.cluster_account.exec_command(command)
+        if stdout.channel.recv_exit_status() > 0:
+            raise ValueError("Error fetching, " +
+                             "probably {} doesn't exist".format(path))
+        return stdout.read().decode('ascii')
+
     def fetch_output(self):
         stat = self.status()
         if stat['status'] != 'finished':
             raise ValueError('Job is in state ' + stat['status'])
 
-        output_file = self.work_directory + '/slurm-' + self.jobid + '.out'
-        command = 'cat ' + output_file
-        stdin, stdout, stderr = self.cluster_account.exec_command(command)
-        return stdout.read().decode('ascii')
+        return self.fetch_file('slurm-{}.out'.format(self.jobid))
+
+    def fetch_error(self):
+        stat = self.status()
+        if stat['status'] != 'finished':
+            raise ValueError('Job is in state ' + stat['status'])
+
+        return self.fetch_file('slurm-{}.err'.format(self.jobid))
+
+    def cleanup(self):
+        if not self.work_directory:
+            raise ValueError('No work directory to clean')
+        command = 'rm -rf ' + self.work_directory
+        return self.cluster_account.simple_exec(command)
+
+    def cancel(self):
+        if self.jobid is None:
+            raise ValueError('Job not submitted!')
+        # TODO: check status for pending vs running?
+        self.log('info', 'Cancelling job ' + self.jobid)
+        command = 'scancel ' + self.jobid
+        return self.cluster_account.simple_exec(command)
