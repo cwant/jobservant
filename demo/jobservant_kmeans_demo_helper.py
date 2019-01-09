@@ -3,10 +3,13 @@ import pandas
 
 import matplotlib.pyplot as plt
 from sklearn.datasets import make_blobs
+from io import StringIO
 
 
-def get_points_and_labels():
-    numpy.random.seed(1337)
+def get_points_and_labels(**kwargs):
+    if kwargs.get('initialize_seed'):
+        numpy.random.seed(1337)
+
     centers = [[-10, -10], [-10, 13], [8, -1]]
     blobs, cluster_labels = make_blobs(n_samples=1000, n_features=2,
                                        centers=centers, cluster_std=5.0)
@@ -46,4 +49,4 @@ def numpy_to_csv(array):
 
 
 def output_to_numpy(out):
-    return numpy.fromstring(out, dtype=int, sep='\n')
+    return numpy.genfromtxt(StringIO(out), delimiter=',')
