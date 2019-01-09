@@ -32,6 +32,7 @@ The individual notebooks will outline any additional requirements that may be ne
 * Create a python virtual environment on your computer using `virtualenv --no-download ~/virtualenv-jobservant`
 * Activate the virtual environment with `source ~/virtualenv-jobservant`. (Your command line prompt should change.) All packages you install should be local to the virtual environment (not installed globally), and the virtual environment will be activated until you issue the command `deactivate` (don't do that now though).
 * Install some packages: `pip3 install jupyter paramiko`
+* The higher-level Jupyter code has internationalization (i18n) support, and depends on the `python-i18n` package with YAML support, so install that with `pip3 install python-i18n[YAML]`
 * For the K-Means clustering demo, you might want to install a few additional packages: `pip3 install numpy pandas matlplotlib sklearn`.
 
 ### Running Jupyter

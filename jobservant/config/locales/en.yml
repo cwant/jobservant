@@ -1,0 +1,31 @@
+en:
+  # job states
+  'finished': 'Finished'
+  'running': 'Running:'
+  'running_colon': 'Running:'
+  'waiting': 'Waiting'
+  'waiting_colon': 'Waiting:'
+
+  # JobProgress
+  'checking_iteration': 'Checking ... (Iteration %{iteration})'
+  'initializing_ellipses': 'Initializing ...'
+  'output_colon': 'Output:'
+  'status_colon': 'Status:'
+
+  # JobStatusTable
+  'accounting_group': 'Accounting group'
+  'cluster': 'Cluster'
+  'cpu_efficiency': 'CPU efficiency'
+  'cpu_utilized': 'CPU utilized'
+  'end_time': 'End time'
+  'exit_code': 'Exit code'
+  'job_id': 'Job ID'
+  'memory_efficiency': 'Memory efficiency'
+  'memory_utilized': 'Memory utilized'
+  'node_list': 'Node list'
+  'partition': 'Partition'
+  'start_time': 'Start time'
+  'state': 'State'
+  'submit_time': 'Submit time'
+  'username': 'Username'
+  'walltime_used': 'Wall-time used'

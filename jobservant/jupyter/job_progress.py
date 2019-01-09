@@ -2,6 +2,7 @@ import time
 import ipywidgets
 from IPython.lib import backgroundjobs
 from IPython.display import display
+from .uses_i18n import t
 
 
 class JobProgress:
@@ -49,7 +50,7 @@ class JobProgress:
             value=0.0,
             min=0.0,
             max=1.0,
-            description='Waiting:',
+            description=t('waiting_colon'),
             bar_style='info',
             orientation='horizontal'
         )
@@ -60,7 +61,7 @@ class JobProgress:
             value=0.0,
             min=0.0,
             max=1.0,
-            description='Running:',
+            description=t('running_colon'),
             bar_style='info',
             orientation='horizontal'
         )
@@ -69,21 +70,21 @@ class JobProgress:
     def create_output_field(self):
         self.output_field = ipywidgets.HTML(
             value='',
-            description='Output:',
+            description=t('output_colon'),
         )
         display(self.output_field)
 
     def create_status_field(self):
         self.status_field = ipywidgets.HTML(
-            value='Initializing ...',
-            description='Status:',
+            value=t('initializing_ellipses'),
+            description=t('status_colon'),
         )
         display(self.status_field)
 
     def update(self):
         self.iteration += 1
         self.status_field.value = \
-            'Checking ... (Iteration %d)' % (self.iteration)
+            t('checking_iteration', iteration=self.iteration)
         status = self.cluster_job.status()
         if status['status'] == 'finished':
             self.finished = True
@@ -104,7 +105,7 @@ class JobProgress:
             self.finished = False
             self.set_waiting(0.0)
             self.set_running(0.0)
-        self.status_field.value = status['status']
+        self.status_field.value = self.i18n_status(status['status'])
 
     def running_done(self):
         self.running_progress.value = 1.0
@@ -124,3 +125,8 @@ class JobProgress:
 
     def wait(self):
         time.sleep(self.sleep_seconds)
+
+    def i18n_status(self, status):
+        if status in ['running', 'waiting', 'finished']:
+            return t(status)
+        return status

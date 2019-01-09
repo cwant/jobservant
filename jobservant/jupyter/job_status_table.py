@@ -1,4 +1,5 @@
 from IPython.display import HTML, display
+from .uses_i18n import t
 
 
 class JobStatusTable:
@@ -12,31 +13,30 @@ class JobStatusTable:
 
     def run(self, *kwargs):
         self.start_table()
-        self.add_row('Cluster',
+        self.add_row(t('cluster'),
                      self.cluster_job.cluster_account.server)
-        self.add_row('Username',
+        self.add_row(t('username'),
                      self.cluster_job.cluster_account.username)
-        self.add_row('Job ID', self.cluster_job.jobid)
+        self.add_row(t('job_id'), self.cluster_job.jobid)
 
-        self.add_separator(section_class='job-status')
         queue_status = self.cluster_job.queue_status_hash()
         if queue_status == {}:
-            self.add_row('State', 'Finished')
             self.add_finished_state_rows()
         else:
-            self.add_row('State', queue_status['STATE'])
+            self.add_separator(section_class='job-status')
+            self.add_row(t('state'), queue_status['STATE'])
 
             self.add_separator()
-            self.add_row('Accounting group', queue_status['ACCOUNT'])
-            self.add_row('Partition', queue_status['PARTITION'])
+            self.add_row(t('accounting_group'), queue_status['ACCOUNT'])
+            self.add_row(t('partition'), queue_status['PARTITION'])
 
             self.add_separator()
-            self.add_row('Submit time', queue_status['SUBMIT_TIME'])
-            self.add_row('Start time', queue_status['START_TIME'])
-            self.add_row('End time', queue_status['END_TIME'])
+            self.add_row(t('submit_time'), queue_status['SUBMIT_TIME'])
+            self.add_row(t('start_time'), queue_status['START_TIME'])
+            self.add_row(t('end_time'), queue_status['END_TIME'])
 
             self.add_separator()
-            self.add_row('Node list', queue_status['NODELIST'])
+            self.add_row(t('node_list'), queue_status['NODELIST'])
 
         self.finish_table()
 
@@ -44,16 +44,23 @@ class JobStatusTable:
         efficiency = self.cluster_job.efficiency_hash()
         if efficiency == {} or not efficiency.get('exit_code'):
             return
-        self.add_row('Exit Code', efficiency['exit_code'])
+        if efficiency['exit_code'] == '0':
+            self.add_separator(section_class='job-status-success')
+        else:
+            self.add_separator(section_class='job-status-failure')
+
+        self.add_row(t('state'), t('finished'))
+
+        self.add_row(t('exit_code'), efficiency['exit_code'])
         # TODO: make the following more fault tolerant
 
-        self.add_row('Wall-time used', efficiency['walltime'])
+        self.add_row(t('wall_time_used'), efficiency['walltime'])
 
         self.add_separator()
-        self.add_row('CPU Utilized', efficiency['cpu_utilized'])
-        self.add_row('CPU Efficiency', efficiency['cpu_efficiency'])
-        self.add_row('Memory Utilized', efficiency['memory_utilized'])
-        self.add_row('Memory Efficiency', efficiency['memory_efficiency'])
+        self.add_row(t('cpu_utilized'), efficiency['cpu_utilized'])
+        self.add_row(t('cpu_efficiency'), efficiency['cpu_efficiency'])
+        self.add_row(t('memory_utilized'), efficiency['memory_utilized'])
+        self.add_row(t('memory_efficiency'), efficiency['memory_efficiency'])
 
     def start_table(self):
         self.setup_table_style()
@@ -102,6 +109,12 @@ class JobStatusTable:
           }
           .rendered_html tbody tr.job-status:not(:hover) {
             background: #eeeeff;
+          }
+          .rendered_html tbody tr.job-status-success:not(:hover) {
+            background: #eeffee;
+          }
+          .rendered_html tbody tr.job-status-failure:not(:hover) {
+            background: #ffeeee;
           }
         </style>
         """))
