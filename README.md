@@ -2,11 +2,11 @@
 
 [![Build Status](https://travis-ci.org/cwant/jobservant.svg?branch=master)](https://travis-ci.org/cwant/jobservant)
 
-This package submits and monitors the progress of jobs on HPC clusters.
+This package submits and monitors the progress of jobs on HPC clusters via python.
 
 ## TL;DR
 
-Checkout the Jupyter notebook demos in the `demo` directory. You should run your notebooks inside an SSH agent with keys loaded. There are two environment variables you might want to set before running your notebooks:
+Checkout the Jupyter notebook demos in the `demo` directory. You should run your notebooks inside an SSH agent with keys loaded, and you'll need to have the python packages `paramiko` and `python-i18n[YAML]` installed. There are two environment variables you might want to set before running your notebooks:
 
 * `JOBSERVANT_CLUSTER`: the network name of the cluster you are connecting to.
 * `JOBSERVANT_ACCOUNTING_GROUP`: the Slurm accounting group you will be using to submit jobs.
