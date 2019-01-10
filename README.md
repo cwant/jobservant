@@ -4,9 +4,7 @@
 
 This package submits and monitors the progress of jobs on HPC clusters.
 
-Expanded documentation coming soon, but currently there are three main classes: `jobservant.cluster_account.ClusterAccount`, `jobservant.cluster_job.ClusterJob`, and `jobservant.jupyter.job_presenter.JobPresenter`.
-
-## Demos
+## TL;DR
 
 Checkout the Jupyter notebook demos in the `demo` directory. You should run your notebooks inside an SSH agent with keys loaded. There are two environment variables you might want to set before running your notebooks:
 
@@ -40,3 +38,11 @@ The individual notebooks will outline any additional requirements that may be ne
 * I don't like to hardcode server names or accounting groups in my notebooks, so instead I put them in environment variables  (this make it easier to switch clusters without modifying my notebooks). As mentioned above, the demos use the environment variables `JOBSERVANT_CLUSTER` and `JOBSERVANT_ACCOUNTING_GROUP` to set these (or if you really want, you can hardcode these in the notebooks instead -- it's up to you). With this in mind, here is how I start my jupyter notebook server:
   `JOBSERVANT_CLUSTER='foo.whatever.org' JOBSERVANT_ACCOUNTING_GROUP='gabba-gabba-hey' jupyter notebook`
 * A browser should spawn for you, click on the `demo` directory and check things out.
+
+## Code documentation
+
+Expanded documentation coming soon, but currently there are three main classes:
+
+* `ClusterAccount`: represents the user's account on an HPC cluster. Depends only on `paramiko`. From module `jobservant.cluster_account`.
+* `ClusterJob`: represents a computational job to be run on an HPC cluster. Owned by a user's account. Depends only on `paramiko`. From module `jobservant.cluster_job`.
+* `JobPresenter`: a class to help interface with job information in a Jupyter notebook. Depends on `jupyter` and `python-i18n[YAML]`. From module `jobservant.jupyter.job_presenter`.
