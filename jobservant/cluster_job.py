@@ -174,9 +174,22 @@ class ClusterJob(HasALogger):
         header = out[0].strip().split('|')
         fields = out[1].strip().split('|')
         output_hash = {}
+
+        # This is gross ... FEATURES field might have '|' in it
+        field_diff = len(fields) - len(header)
+
+        field_i = 0
         for i in range(len(header)):
-            if len(header[i]) > 0:
-                output_hash[header[i]] = fields[i]
+            if (header[i] == 'FEATURES') and field_diff > 0:
+                # Reassemble features field
+                features_field = '|'.join(fields[field_i:
+                                                 field_i + field_diff + 1])
+                output_hash[header[i]] = features_field
+                field_i += field_diff
+            elif len(header[i]) > 0:
+                output_hash[header[i]] = fields[field_i]
+
+            field_i += 1
 
         return output_hash
 
